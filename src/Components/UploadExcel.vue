@@ -5,6 +5,7 @@
          accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
       <br />
       <br />
+      <div v-if="isLoading"><half-circle-spinner :animation-duration="1000" :size="60" color="#61876E" /> </div>
       <div class="file" v-show="show">
          <div>
             <p>Affected rows : {{ issueCount }}</p>
@@ -28,6 +29,11 @@
             <button class="export" v-on:click="downloadFile">Save</button>
          </div>
       </div>
+
+      <div class="blur" v-if="isLoading1">
+         <half-circle-spinner :animation-duration="1000" :size="60" color="#61876E" />
+      </div>
+
       <div class="blur" v-on:click="False" v-show="popUp">
          <div class="popDiv" @click.stop="doSomething">
             Previous Data
@@ -40,16 +46,16 @@
             <input type="number" class="editText" placeholder="Enter Phone Number" v-on:change="enter($event)"
                v-show="popUpPhone" required maxlength="10">
 
-            <select class="p"  v-show="popUpCountry" v-model="data">
-               <option v-for="(i,index) in countryDropArray" :key="index" :value='i.value'>{{ i.label }}</option>
+            <select class="p" v-show="popUpCountry" v-model="data">
+               <option v-for="(i, index) in countryDropArray" :key="index" :value='i.value'>{{ i.label }}</option>
             </select>
 
-            <select class="p"  v-show="popUpState" v-model="data">
-               <option v-for="(i,ind) in stateObject[index-1]" :key="ind" :value='i'>{{ i }}</option>
+            <select class="p" v-show="popUpState" v-model="data">
+               <option v-for="(i, ind) in stateObject[index - 1]" :key="ind" :value='i'>{{ i }}</option>
             </select>
 
-            <select class="p"  v-show="popUpCity" v-model="data">
-               <option v-for="(i,ind) in cityObject[index-1]" :key="ind" :value='i'>{{ i }}</option>
+            <select class="p" v-show="popUpCity" v-model="data">
+               <option v-for="(i, ind) in cityObject[index - 1]" :key="ind" :value='i'>{{ i }}</option>
             </select>
             <div style="text-align: left;color: red;margin-bottom: 1em;width: 80%; font-size: 10px;">{{ error }}</div>
             <button class="save" v-on:click="saveData" type="submit">
@@ -58,6 +64,28 @@
          </div>
 
       </div>
+      <!-- <div class="blur" v-on:click="False" v-show="popUp">
+      <PopUpComp 
+         :False="False" 
+         :popup="popUp"
+         :temp="temp"
+         :enter="enter"
+         :popUpName="popUpName"
+         :popUpEmail="popUpEmail"
+         :popUpPhone="popUpPhone"
+         :popUpState="popUpState"
+         :popUpCity="popUpCity"
+         :popUpCountry="popUpCountry"
+         :data="data"
+         :countryDropArray="countryDropArray"
+         :cityObject="cityObject"
+         :stateObject="stateObject"
+         :index="index"
+         :saveData="saveData"
+         :error="error"
+         >
+      </PopUpComp> -->
+   <!-- </div> -->
    </div>
 </template>
 
@@ -66,52 +94,55 @@ import * as XLSX from "xlsx";
 import { State } from 'country-state-city';
 import { City } from 'country-state-city';
 import CountryCodes from 'country-codes-list'
+import { HalfCircleSpinner } from 'epic-spinners'
+// import PopUpComp from "./PopUpComp.vue";
 
 export default {
    name: 'UploadExcel',
+   components: {
+    HalfCircleSpinner,
+   //  PopUpComp
+},
    data() {
       return {
          file: File,
          file1: File,
-         arrayData: [],
-         show: false,
-         keyPair_Data: [],
-         checkData: [],
-         desc: [],
-         popUp: false,
-         popUpName: false,
-         popUpEmail: false,
-         popUpPhone: false,
-         popUpCity: false,
-         popUpState: false,
-         popUpCountry: false,
-         temp: null,
-         data: null,
+         arrayData: [],       //data in row
+         show: false,         //shows and hide table
+         isLoading: false,
+         isLoading1: false,
+         keyPair_Data: [],    //data in key-value
+         checkData: [],       //all errors
+         desc: [],            //all errors description
+         checkInd: [],        //index of errors
+         popUp: false,        // --\
+         popUpName: false,    //    \
+         popUpEmail: false,   //     \
+         popUpPhone: false,   //      --  pop up
+         popUpCity: false,    //     / 
+         popUpState: false,   //    /
+         popUpCountry: false, // --/
+         temp: null,          //previous data before update
+         data: null,          //input data to update
          error: null,
          errorCounter: 0,
-         issueCount: 0,
-         okCount: 0,
-         local: [],
-         index: 0,
-         allStateList: [],
-         stateArray: [],
-         stateObject: [],
-         checkInd: [],
-         stateCodeArray: [],
-         stateCodeObject: [],
-         allCityList: [],
-         key: [],
-         stateNames: [],
-         cityArray: [],
-         cityObject: [],
+         issueCount: 0,       //affected rows
+         okCount: 0,          //not affected rows
+         local: [],           //country calling code array ['91','376']
+         index: 0,            //row no of updating element
+         allStateList: [],    //state array
+         stateArray: [],      //temp : state array names in object
+         stateObject: [],     //all state array names in object
+         stateCodeArray: [],  //temp : codes of state
+         stateCodeObject: [], //all codes of state
+         allCityList: [],     //city array
+         key: [],             //country code array ['IN','US']
+         stateNames: [],      //names of all state
+         cityArray: [],       //temp : city array names in object
+         cityObject: [],      //all city array names in object
          code: [],
-         keyy: null,
-
-         tempArray:[],
-
-         cityDropArray: [],
-         stateDropArray: [],
-         countryDropArray: [],
+         keyy: null,          //headers of row 
+         countryDropArray: [],//dropdown array of country
       }
    },
    methods: {
@@ -127,9 +158,17 @@ export default {
          this.popUpState = false
          this.popUpCountry = false
       },
-      addFile(e) {
-         this.file = e.target.files[0];
 
+      addFile(e) {
+         this.arrayData = []
+         this.show = false;
+         this.isLoading = true;
+         setTimeout(() => {
+            this.isLoading = false
+            this.show = true
+         }, 2000)
+
+         this.file = e.target.files[0];
          //fileReader function
          const reader = new FileReader();
          reader.onload = (e) => {
@@ -140,19 +179,16 @@ export default {
             const sname = wb.SheetNames[0];
             const ws = wb.Sheets[sname];
             this.arrayData = XLSX.utils.sheet_to_json(ws, { header: 1 })
-            this.show = true;
-
-
          }
          reader.readAsBinaryString(this.file);
-
-
       },
+
       snake_case_string(str) {
          return str && str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
             .map(s => s.toLowerCase())
             .join('_');
       },
+
       validate() {
          this.checkData = []
          this.desc = []
@@ -240,6 +276,7 @@ export default {
             })
          })
       },
+
       displayError(j, ind) {
 
          for (let c = 0; c < this.checkData.length; c++) {
@@ -248,10 +285,17 @@ export default {
             }
          }
       },
+
       edit(i, index) {
-         this.popUp = true
          this.temp = i;
          this.index = index;
+         this.popUp = false
+         this.isLoading1 = true
+         setTimeout(() => {
+            this.isLoading1 = false
+            this.popUp = true
+         }, 2000)
+
 
          for (let k = 0; k < this.keyPair_Data.length; k++) {
             Object.keys(this.keyPair_Data[k]).map(key => {
@@ -283,6 +327,7 @@ export default {
          }
 
       },
+
       saveData() {
          if (this.keyy == 'name') {
             if (!this.data) {
@@ -295,7 +340,7 @@ export default {
                this.error = 'Name must be String'
             }
             else {
-               this.error=''
+               this.error = ''
                this.save()
             }
          }
@@ -307,7 +352,7 @@ export default {
                this.error = 'Email Id is invalid'
             }
             else {
-               this.error=''
+               this.error = ''
                this.save()
             }
          }
@@ -322,7 +367,7 @@ export default {
                this.error = 'Phone Number must be of 10 digits'
             }
             else {
-               this.error=''
+               this.error = ''
                this.save()
             }
          }
@@ -330,8 +375,8 @@ export default {
             if (!this.data) {
                this.error = "City is required is Required"
             }
-            else{
-               this.error=''
+            else {
+               this.error = ''
                this.save()
             }
          }
@@ -339,8 +384,8 @@ export default {
             if (!this.data) {
                this.error = "State is required is Required"
             }
-            else{
-               this.error=''
+            else {
+               this.error = ''
                this.save()
             }
          }
@@ -348,15 +393,16 @@ export default {
             if (!this.data) {
                this.error = "Country code is required is Required"
             }
-            else{
-               this.error=''
-               this.country=this.data
+            else {
+               this.error = ''
+               this.country = this.data
                this.save()
             }
          }
 
 
       },
+
       save() {
          for (let i = 1; i < this.arrayData.length; i++) {
 
@@ -377,6 +423,7 @@ export default {
             }
          }
       },
+
       downloadFile() {
          const data = this.keyPair_Data;
          var blob = new Blob([data], {
@@ -390,12 +437,10 @@ export default {
             method: 'post',
             body: formData
          })
-
       },
-
    },
-   beforeUpdate() {
 
+   beforeUpdate() {
       this.local = []
       let headers = this.arrayData[0];
       let final_data = [];
@@ -410,7 +455,6 @@ export default {
       }
       this.keyPair_Data = final_data;
 
-
       this.keyPair_Data.forEach((value) => {
          Object.keys(value).map(i => {
             if (i == 'country_code') {
@@ -419,11 +463,9 @@ export default {
          })
       })
 
-
       let obj = {}
       const myCountryCodesObject = CountryCodes.customList('countryCode', '{countryCallingCode}')
       obj = myCountryCodesObject;
-
 
       this.allStateList = []
       Object.values(this.local).map((v) => {
@@ -432,7 +474,6 @@ export default {
       })
 
       this.validate()
-
 
       this.allCityList = []
       this.key = []
@@ -482,14 +523,12 @@ export default {
       }
       this.okCount = this.keyPair_Data.length - this.issueCount
 
-      this.countryDropArray=[]
+      this.countryDropArray = []
       const countryCode = CountryCodes.customList('countryCode', '{countryCallingCode}')
-      Object.values(countryCode).map((v)=>{
-         this.countryDropArray.push({label:v,value:v})
+      Object.values(countryCode).map((v) => {
+         this.countryDropArray.push({ label: v, value: v })
       })
-
    },
-
 }
 </script>
 
