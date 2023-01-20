@@ -1,26 +1,35 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+   <div class="header">
+      FindError
+   </div>
+   <UploadExcel/>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import UploadExcel from './Components/UploadExcel.vue';
+
 
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
+    name: "App",
+    components: { UploadExcel }
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap');
+
+body {
+   margin: 0;
+   font-family: 'Poppins', sans-serif;
+   background-color: #eee;
+}
+.header{
+   display: flex;
+   background-color: #3C6255;
+   padding: 1rem;
+   font-size: 30px;
+   color: #EAE7B1;
+   font-weight: bold;
 }
 </style>
+
