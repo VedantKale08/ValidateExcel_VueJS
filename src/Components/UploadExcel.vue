@@ -457,7 +457,6 @@ export default {
          });
          var fileOfBlob = new File([blob], 'myFile.csv');
          let formData = new FormData();
-
          formData.append('upload', fileOfBlob, 'file.csv')
          fetch('http://localhost:5000/upload', {
             method: 'post',
