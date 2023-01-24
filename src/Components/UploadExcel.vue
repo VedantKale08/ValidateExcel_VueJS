@@ -19,12 +19,17 @@
             </thead>
             <tbody>
                <tr v-for="j in arrayData.length" :key="j">
-                  <td v-for="i, index in arrayData[j]" :key="index">
+                  <td v-for="i, index in currentData[j - 1]" :key="index">
                      <p>{{ i }} <br /><a class="error" v-on:click="edit(i, j)">{{ displayError(i, j) }}</a></p>
                   </td>
                </tr>
             </tbody>
          </table>
+         <div class="options">
+            <button v-for="i in pageNumber" :key="i" class="numbers" @click="paginate(i)" :disabled="current == i">
+               <a>{{ i }}</a>
+            </button>
+         </div>
          <div class="buttDiv">
             <button class="export" v-on:click="downloadFile">Save</button>
          </div>
@@ -33,7 +38,7 @@
       <div class="blur" v-if="isLoading1">
          <half-circle-spinner :animation-duration="1000" :size="60" color="#61876E" />
       </div>
-
+ 
       <div class="blur" v-on:click="False" v-show="popUp">
          <div class="popDiv" @click.stop="doSomething">
             Previous Data
@@ -62,30 +67,7 @@
                Save
             </button>
          </div>
-
       </div>
-      <!-- <div class="blur" v-on:click="False" v-show="popUp">
-      <PopUpComp 
-         :False="False" 
-         :popup="popUp"
-         :temp="temp"
-         :enter="enter"
-         :popUpName="popUpName"
-         :popUpEmail="popUpEmail"
-         :popUpPhone="popUpPhone"
-         :popUpState="popUpState"
-         :popUpCity="popUpCity"
-         :popUpCountry="popUpCountry"
-         :data="data"
-         :countryDropArray="countryDropArray"
-         :cityObject="cityObject"
-         :stateObject="stateObject"
-         :index="index"
-         :saveData="saveData"
-         :error="error"
-         >
-      </PopUpComp> -->
-   <!-- </div> -->
    </div>
 </template>
 
@@ -95,14 +77,11 @@ import { State } from 'country-state-city';
 import { City } from 'country-state-city';
 import CountryCodes from 'country-codes-list'
 import { HalfCircleSpinner } from 'epic-spinners'
-// import PopUpComp from "./PopUpComp.vue";
-
 export default {
    name: 'UploadExcel',
    components: {
-    HalfCircleSpinner,
-   //  PopUpComp
-},
+      HalfCircleSpinner,
+   },
    data() {
       return {
          file: File,
@@ -143,6 +122,13 @@ export default {
          code: [],
          keyy: null,          //headers of row 
          countryDropArray: [],//dropdown array of country
+
+         current: 1,          //current page
+         dataPerPage: 10,     //no of data per page
+         indexOfLastPage: 0,  //last index of data of page
+         indexOfFirstPage: 0, //First index of data of page
+         currentData: [],     //data on current page 
+         pageNumber: [],      //all page numbers
       }
    },
    methods: {
@@ -151,14 +137,18 @@ export default {
       },
       False() {
          this.popUp = false
+         this.isLoading1 = true
+         setTimeout(() => {
+            this.isLoading1 = false
+         }, 1000)
          this.popUpName = false
          this.popUpEmail = false
          this.popUpPhone = false
          this.popUpCity = false
          this.popUpState = false
          this.popUpCountry = false
+         this.error = ''
       },
-
       addFile(e) {
          this.arrayData = []
          this.show = false;
@@ -173,22 +163,20 @@ export default {
          const reader = new FileReader();
          reader.onload = (e) => {
             const data = e.target.result;
-
             //methods
             const wb = XLSX.read(data, { type: 'binary' });
             const sname = wb.SheetNames[0];
             const ws = wb.Sheets[sname];
             this.arrayData = XLSX.utils.sheet_to_json(ws, { header: 1 })
+            
          }
          reader.readAsBinaryString(this.file);
       },
-
       snake_case_string(str) {
          return str && str.match(/[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+/g)
             .map(s => s.toLowerCase())
             .join('_');
       },
-
       validate() {
          this.checkData = []
          this.desc = []
@@ -276,8 +264,20 @@ export default {
             })
          })
       },
-
       displayError(j, ind) {
+         let k = 10
+         for (let j = 1; j <= this.currentData.length; j++) {
+            if (this.current == j) {
+               k = 10 * j - 10
+               break;
+            }
+         }
+         for (let i = 1; i <= 10; i++) {
+            if (ind == i && this.current != 1) {
+               ind = ind + k
+               break;
+            }
+         }
 
          for (let c = 0; c < this.checkData.length; c++) {
             if (j == this.checkData[c] && ind == this.checkInd[c]) {
@@ -285,17 +285,40 @@ export default {
             }
          }
       },
-
-      edit(i, index) {
-         this.temp = i;
-         this.index = index;
+      cl(i, j) {
          this.popUp = false
          this.isLoading1 = true
          setTimeout(() => {
             this.isLoading1 = false
             this.popUp = true
+            this.edit(i, j)
          }, 2000)
+      }
+      ,
+      edit(i, index) {
+         this.popUp = false
+         this.isLoading1 = true
+         setTimeout(() => {
+            this.isLoading1 = false
+            this.popUp = true
+         }, this.temp != null)
+         this.temp = i;
+         this.index = index;
 
+         let k = 10
+         for (let j = 1; j <= this.currentData.length; j++) {
+            if (this.current == j) {
+               k = (10 * j) - 10
+               break;
+            }
+         }
+         for (let i = 1; i <= 10; i++) {
+            if (index == i && this.current != 1) {
+               this.index = index + k
+               index = index + k
+               break;
+            }
+         }
 
          for (let k = 0; k < this.keyPair_Data.length; k++) {
             Object.keys(this.keyPair_Data[k]).map(key => {
@@ -327,7 +350,6 @@ export default {
          }
 
       },
-
       saveData() {
          if (this.keyy == 'name') {
             if (!this.data) {
@@ -402,14 +424,19 @@ export default {
 
 
       },
-
       save() {
          for (let i = 1; i < this.arrayData.length; i++) {
 
             for (let j = 1; j < this.arrayData.length; j++) {
                if (this.arrayData[i][j] == this.temp && this.arrayData[i][0] == this.index) {
                   this.arrayData[i][j] = this.data
+                  
                   this.popUp = false
+                  this.isLoading1 = true
+                  setTimeout(() => {
+                     this.isLoading1 = false
+                  }, 1000)
+
                   this.data = null;
                   this.popUp = false
                   this.popUpName = false
@@ -423,7 +450,6 @@ export default {
             }
          }
       },
-
       downloadFile() {
          const data = this.keyPair_Data;
          var blob = new Blob([data], {
@@ -438,8 +464,14 @@ export default {
             body: formData
          })
       },
+      paginate(number) {
+         this.current = number
+         console.log(this.current);
+         this.indexOfLastPage = this.current * this.dataPerPage;
+         this.indexOfFirstPage = this.indexOfLastPage - this.dataPerPage;
+         this.currentData = this.arrayData.slice(this.indexOfFirstPage, this.indexOfLastPage);
+      }
    },
-
    beforeUpdate() {
       this.local = []
       let headers = this.arrayData[0];
@@ -454,6 +486,14 @@ export default {
          final_data.push(object);
       }
       this.keyPair_Data = final_data;
+
+      this.pageNumber = []
+      this.indexOfLastPage = this.current * this.dataPerPage;
+      this.indexOfFirstPage = this.indexOfLastPage - this.dataPerPage;
+      this.currentData = this.arrayData.slice(this.indexOfFirstPage + 1, this.indexOfLastPage + 1);
+      for (let i = 1; i <= Math.ceil((this.arrayData.length - 1) / this.dataPerPage); i++) {
+         this.pageNumber.push(i)
+      }
 
       this.keyPair_Data.forEach((value) => {
          Object.keys(value).map(i => {
@@ -696,5 +736,31 @@ table {
 .buttDiv {
    display: flex;
    justify-content: end;
+}
+
+.options {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   margin-top: 2rem;
+   padding: 2rem;
+}
+
+.numbers {
+   padding: 20px;
+   outline: none;
+   cursor: pointer;
+   background-color: #fff;
+   box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+   color: #61876E;
+   border-radius: 10px;
+   margin-left: 20px;
+   text-align: center;
+   border: none;
+}
+
+.numbers:hover {
+   background-color: #61876E;
+   color: #fff;
 }
 </style>

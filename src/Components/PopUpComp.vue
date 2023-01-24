@@ -1,60 +1,68 @@
 <template>
-   
-      <div class="popDiv" @click.stop="doSomething">
-         Previous Data
-         <p class="p">{{ temp }}</p>
-         Add Correct Data
-         <input type="text" class="editText" placeholder="Enter Name with (Dr.)" v-on:change="enter($event)"
-            v-show="popUpName" required>
-         <input type="email" class="editText" placeholder="Enter Email" v-on:change="enter($event)" v-show="popUpEmail"
-            required>
-         <input type="number" class="editText" placeholder="Enter Phone Number" v-on:change="enter($event)"
-            v-show="popUpPhone" required maxlength="10">
-
-         <select class="p" v-show="popUpCountry" v-model="datas">
-            <option v-for="(i, index) in countryDropArray" :key="index" :value='i.value'>{{ i.label }}</option>
-         </select>
-
-         <select class="p" v-show="popUpState" v-model="datas">
-            <option v-for="(i, ind) in stateObject[index - 1]" :key="ind" :value='i'>{{ i }}</option>
-         </select>
-
-         <select class="p" v-show="popUpCity" v-model="datas">
-            <option v-for="(i, ind) in cityObject[index - 1]" :key="ind" :value='i'>{{ i }}</option>
-         </select>
-         <div style="text-align: left;color: red;margin-bottom: 1em;width: 80%; font-size: 10px;">{{ error }}</div>
-         <button class="save" v-on:click="saveData" type="submit">
-            Save
-         </button>
+   <div>
+      <table>
+         <tbody>
+            <tr v-for="(i) in currentData.length" :key="i">
+               <td v-for="(j, index) in currentData[i-1]" :key="index">{{ j }}</td>
+            </tr>
+         </tbody>
+      </table>
+      <div style="display: flex; color: blue;">
+         <div style="width: 30px;border: 1px solid black; text-align: center;cursor: pointer;" v-for="i in pageNumber"
+            :key="i">
+            <a href="!#" @click="paginate(i)">{{ i }}</a>
+         </div>
       </div>
+   </div>
+
 
 </template>
 <script>
 
 export default {
    name: 'PopUpComp',
-   props: {
-         False:Function, 
-         popup:Boolean,
-         temp:String,
-         enter:Function,
-         popUpName:Boolean,
-         popUpEmail:Boolean,
-         popUpPhone:Boolean,
-         popUpState:Boolean,
-         popUpCity:Boolean,
-         popUpCountry:Boolean,
-         data:String,
-         countryDropArray:Array,
-         cityObject:Array,
-         stateObject:Array,
-         index:Number,
-         saveData:Function,
-         error:String
+   data() {
+      return {
+         current: 1,
+         dataPerPage: 6,
+         indexOfLastPage: 0,
+         indexOfFirstPage: 0,
+         currentData: [],
+         pageNumber: [],
+
+         data: [
+            [1, 2, 3, 4, 5],
+            [1, 2, 3, 4, 5],
+            [1, 2, 3, 4, 5],
+            [1, 2, 3, 4, 5],
+            [1, 2, 3, 4, 5],
+            [1, 2, 3, 4, 5],
+            [1, 3, 3, 44, 5],
+            [1, 2, 444, 4, 5],
+            [1, 2, 3, 4, 5],
+            [1, 2, 32, 4, 5],
+            [111, 2, 3, 4, 5],
+            [111, 2, 3, 4, 5],
+            [111, 2, 3, 4, 5],
+         ],
+      }
    },
-   data(){
-      return{
-         datas:this.data
+   methods: {
+      paginate(number) {
+         this.current = number
+         this.indexOfLastPage = this.current * this.dataPerPage;
+         this.indexOfFirstPage = this.indexOfLastPage - this.dataPerPage;
+         this.currentData = this.data.slice(this.indexOfFirstPage, this.indexOfLastPage);
+      }
+   },
+
+   mounted() {
+      this.indexOfLastPage = this.current * this.dataPerPage;
+      this.indexOfFirstPage = this.indexOfLastPage - this.dataPerPage;
+      this.currentData = this.data.slice(this.indexOfFirstPage, this.indexOfLastPage);
+
+      for (let i = 1; i <= Math.ceil(this.data.length / this.dataPerPage); i++) {
+         this.pageNumber.push(i)
       }
    }
 }

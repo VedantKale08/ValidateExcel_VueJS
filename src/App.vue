@@ -3,15 +3,21 @@
       FindError
    </div>
    <UploadExcel/>
+   <!-- <PopUpComp></PopUpComp> -->
 </template>
 
 <script>
 import UploadExcel from './Components/UploadExcel.vue';
 
+// import PopUpComp from './Components/PopUpComp.vue';
+
 
 export default {
     name: "App",
-    components: { UploadExcel }
+    components: {
+      UploadExcel
+   //  PopUpComp
+}
 }
 </script>
 
